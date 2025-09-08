@@ -1,0 +1,223 @@
+<!-- © 2025 Webbrowser11 and Contributors -->
+<!-- Thank you ChatGPT for the styling -->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Chatter</title>
+  <style>
+    /* Reset */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background-color: #f0f2f5;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 15px;
+      color: #333;
+    }
+
+    a {
+      color: #007BFF;
+      text-decoration: none;
+      font-size: 12px;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      background-color: #4CAF50;
+      color: white;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    p {
+      font-size: 12px;
+      color: #555;
+      margin-top: 5px;
+    }
+
+    .container {
+      background-color: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      width: 95vw;
+      height: 95vh;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .box {
+      background-color: #f9f9f9;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      padding: 10px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-size: 14px;
+      flex: 1 1 auto; /* grow/shrink with container */
+      width: 100%;
+      margin-bottom: 10px;
+    }
+
+    /* Stick input and button at bottom */
+    .messaging-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    #signupScreen, #loginScreen, #messagingScreen {
+      display: none;
+    }
+
+    #signupScreen.active, #loginScreen.active, #messagingScreen.active {
+      display: flex;
+      flex-direction: column;
+    }
+  </style>
+</head>
+<body>
+  <!-- Signup screen -->
+  <div id="signupScreen" class="container active">
+    <h2>Signup</h2>
+    <input type="text" id="signupName" placeholder="Enter your name">
+    <input type="password" id="signupPassword" placeholder="Enter your password">
+    <input type="text" id="signupBirthday" placeholder="Enter your birthday (YYYYMMDD)">
+    <button onclick="signup()">Signup</button>
+    <p id="signupOutput"></p>
+    <p>Already have an account? <a href="#" onclick="showLogin()">Login here</a></p>
+  </div>
+
+  <!-- Login screen -->
+  <div id="loginScreen" class="container">
+    <h2>Login</h2>
+    <input type="text" id="loginName" placeholder="Enter your name">
+    <input type="password" id="loginPassword" placeholder="Enter your password">
+    <button onclick="login()">Login</button>
+    <p id="loginOutput"></p>
+    <p>No account? <a href="#" onclick="showSignup()">Signup here</a></p>
+  </div>
+
+  <!-- Messaging screen -->
+  <div id="messagingScreen" class="container">
+    <h2>Messages</h2>
+    <div class="box" id="messageBox"></div>
+    <div class="messaging-controls">
+      <input type="text" id="messageInput" placeholder="Message using chatter">
+      <button onclick="addToMessageLog()">Send</button>
+    </div>
+    <p id="output"></p>
+  </div>
+
+  <script>
+    let username = "";
+
+    function showLogin() {
+      document.getElementById("signupScreen").classList.remove("active");
+      document.getElementById("loginScreen").classList.add("active");
+    }
+
+    function showSignup() {
+      document.getElementById("loginScreen").classList.remove("active");
+      document.getElementById("signupScreen").classList.add("active");
+    }
+
+    async function signup() {
+      const name = document.getElementById("signupName").value;
+      const pass = document.getElementById("signupPassword").value;
+      const bday = document.getElementById("signupBirthday").value;
+
+      const res = await fetch("/signup", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({username: name, password: pass, birthday: bday})
+      });
+      const text = await res.text();
+      document.getElementById("signupOutput").innerText = text;
+    }
+
+    async function login() {
+      const name = document.getElementById("loginName").value;
+      const pass = document.getElementById("loginPassword").value;
+
+      const res = await fetch("/login", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({username: name, password: pass})
+      });
+      const text = await res.text();
+      document.getElementById("loginOutput").innerText = text;
+
+      if (text.includes("Login successful")) {
+        username = name;
+        document.getElementById("loginScreen").classList.remove("active");
+        document.getElementById("messagingScreen").classList.add("active");
+      }
+    }
+
+    function addToMessageLog() {
+      if (!username) {
+        document.getElementById("output").innerText = "Login first.";
+        return;
+      }
+      let message = "<" + username + ">: " + document.getElementById("messageInput").value;
+
+      fetch("/message", {
+        method: "POST",
+        headers: {"Content-Type": "text/plain"},
+        body: message
+      })
+      .then(res => res.text())
+      .then(text => {
+        document.getElementById("output").innerText = text;
+        document.getElementById("messageInput").value = "";
+      });
+    }
+
+    async function updateMessages() {
+      try {
+        const res = await fetch("/message");
+        if (res.ok) {
+          const text = await res.text();
+          document.getElementById("messageBox").textContent = text;
+        }
+      } catch {}
+    }
+
+    setInterval(updateMessages, 100);
+  </script>
+</body>
+</html>
