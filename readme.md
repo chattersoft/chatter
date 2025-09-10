@@ -1,6 +1,9 @@
 # Chatter
 Chatter is a app that is hosted locally and let's you chat with people on your network seamlessly. Please star!
 
+# Security Updates
+Consider not installing before messages are encrypted, and user salts are not stored in plain sight.
+
 # How to run
 Install [python](https://www.python.org/downloads/)
 
